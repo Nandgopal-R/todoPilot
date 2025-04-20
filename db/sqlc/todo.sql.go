@@ -9,6 +9,28 @@ import (
 	"context"
 )
 
+const addTodo = `-- name: AddTodo :exec
+INSERT INTO todoList (
+  task
+) VALUES ( $1 )
+`
+
+func (q *Queries) AddTodo(ctx context.Context, task string) error {
+	_, err := q.db.ExecContext(ctx, addTodo, task)
+	return err
+}
+
+const completeTask = `-- name: CompleteTask :exec
+UPDATE todoList
+  SET completed = TRUE
+  WHERE id = ($1)
+`
+
+func (q *Queries) CompleteTask(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, completeTask, id)
+	return err
+}
+
 const getTodos = `-- name: GetTodos :many
 SELECT id, task, completed FROM todoList ORDER BY id
 `
@@ -34,4 +56,15 @@ func (q *Queries) GetTodos(ctx context.Context) ([]Todolist, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getTodosById = `-- name: GetTodosById :one
+SELECT id, task, completed FROM todoList WHERE id=$1
+`
+
+func (q *Queries) GetTodosById(ctx context.Context, id int32) (Todolist, error) {
+	row := q.db.QueryRowContext(ctx, getTodosById, id)
+	var i Todolist
+	err := row.Scan(&i.ID, &i.Task, &i.Completed)
+	return i, err
 }
